@@ -1,0 +1,46 @@
+---
+anvil_contract_version: 1
+goal: "Add a read-through cache layer in front of the users table."
+created: "2026-04-15"
+source_intent: "Reduce DB read pressure by caching lookups for 60 seconds."
+criteria:
+  - id: C1
+    statement: "getUser reads through the cache when present."
+    exists:
+      paths:
+        - "src/cache.js"
+      symbols:
+        - "getUserCached"
+    substantive:
+      coverage_min: 0.9
+      branches:
+        - "cache-hit"
+        - "cache-miss"
+    wired:
+      entry_point: "src/app.js"
+      reachable_symbols:
+        - "getUserCached"
+    functional:
+      inputs:
+        - "same user id fetched twice within 60s"
+      expected: "second fetch does not hit the DB"
+  - id: C2
+    statement: "Cache invalidates on user update."
+    exists:
+      paths:
+        - "src/cache.js"
+      symbols:
+        - "invalidateUser"
+    substantive:
+      coverage_min: 0.85
+      branches:
+        - "update-invalidates"
+    wired:
+      entry_point: "src/app.js"
+      reachable_symbols:
+        - "invalidateUser"
+    functional:
+      inputs:
+        - "update user then read user"
+      expected: "read reflects the update"
+---

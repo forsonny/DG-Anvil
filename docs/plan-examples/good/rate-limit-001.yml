@@ -1,0 +1,17 @@
+# contract: rate-limit-001.yml
+anvil_plan_version: 1
+tasks:
+  - id: T1
+    wave: 0
+    title: "Implement rate limiter core"
+    criterion_ids:
+      - C1
+    loop_cap: 3
+  - id: T2
+    wave: 1
+    title: "Wire rolling-window reset"
+    criterion_ids:
+      - C2
+    depends_on:
+      - T1
+    loop_cap: 3

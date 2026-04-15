@@ -1,0 +1,25 @@
+{
+  "name": "dg-anvil",
+  "owner": {
+    "name": "forsonny",
+    "url": "https://github.com/forsonny"
+  },
+  "description": "Single-plugin marketplace for DG-Anvil. Adds the DG-Anvil contract-driven loop to Claude Code.",
+  "plugins": [
+    {
+      "name": "dg-anvil",
+      "source": "./",
+      "description": "Enforces the Anvil loop (Contract, Plan, Execute, Verify, Judge, Reset) as structural gates.",
+      "version": "0.1.0",
+      "homepage": "https://github.com/forsonny/DG-Anvil",
+      "keywords": [
+        "anvil",
+        "contract-driven-development",
+        "verification",
+        "tdd",
+        "ledger",
+        "court"
+      ]
+    }
+  ]
+}

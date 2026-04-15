@@ -1,0 +1,16 @@
+# rejection_rule: forward_wave_reference; expected_code: E_INVALID_PLAN
+# contract: rate-limit-001.yml
+anvil_plan_version: 1
+tasks:
+  - id: T1
+    wave: 1
+    title: "x"
+    criterion_ids:
+      - C1
+    depends_on:
+      - T2
+  - id: T2
+    wave: 1
+    title: "y"
+    criterion_ids:
+      - C2

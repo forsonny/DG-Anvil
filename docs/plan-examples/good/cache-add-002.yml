@@ -1,0 +1,25 @@
+# contract: cache-add-002.yml
+anvil_plan_version: 1
+tasks:
+  - id: T1
+    wave: 0
+    title: "Add cache module"
+    criterion_ids:
+      - C1
+    loop_cap: 3
+  - id: T2
+    wave: 0
+    title: "Add cache invalidation hook"
+    criterion_ids:
+      - C2
+    loop_cap: 3
+  - id: T3
+    wave: 1
+    title: "Integrate cache in app entry"
+    criterion_ids:
+      - C1
+      - C2
+    depends_on:
+      - T1
+      - T2
+    loop_cap: 3

@@ -1,0 +1,53 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://dg-anvil/schemas/contract-schema.json",
+  "title": "Anvil Contract",
+  "type": "object",
+  "required": ["anvil_contract_version", "goal", "created", "source_intent", "criteria"],
+  "additionalProperties": false,
+  "properties": {
+    "anvil_contract_version": { "type": "integer", "const": 1 },
+    "goal": { "type": "string", "minLength": 1 },
+    "created": { "type": "string", "minLength": 1 },
+    "source_intent": { "type": "string", "minLength": 1 },
+    "ledger_queried": { "type": "boolean" },
+    "ledger_hits": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["pattern", "lessons"],
+        "additionalProperties": false,
+        "properties": {
+          "pattern": { "type": "string" },
+          "lessons": { "type": "array", "items": { "type": "string" } }
+        }
+      }
+    },
+    "invariants": {
+      "type": "object",
+      "additionalProperties": true
+    },
+    "notes": { "type": "string" },
+    "counter_examples": {
+      "type": "object",
+      "additionalProperties": { "type": "string" }
+    },
+    "criteria": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": ["id", "statement", "exists", "substantive", "wired", "functional"],
+        "additionalProperties": false,
+        "properties": {
+          "id": { "type": "string", "minLength": 1 },
+          "statement": { "type": "string", "minLength": 1 },
+          "exists": { "type": "object", "minProperties": 1 },
+          "substantive": { "type": "object", "minProperties": 1 },
+          "wired": { "type": "object", "minProperties": 1 },
+          "functional": { "type": "object", "minProperties": 1 }
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,22 @@
+{
+  "name": "dg-anvil",
+  "version": "0.1.0",
+  "description": "Enforces the Anvil loop (Contract, Plan, Execute, Verify, Judge, Reset) as structural gates. Specifications are machine-readable before code runs; verification is external; failures persist as Ledger lessons that future contracts inherit.",
+  "author": {
+    "name": "forsonny",
+    "url": "https://github.com/forsonny"
+  },
+  "homepage": "https://github.com/forsonny/DG-Anvil",
+  "repository": "https://github.com/forsonny/DG-Anvil.git",
+  "license": "MIT",
+  "keywords": [
+    "anvil",
+    "contract-driven-development",
+    "verification",
+    "tdd",
+    "structural-gates",
+    "ledger",
+    "court",
+    "claude-code"
+  ]
+}

@@ -1,0 +1,9 @@
+# contract: ./contract.yml
+anvil_plan_version: 1
+tasks:
+  - id: T0
+    wave: 0
+    title: "Implement Sum and wire Run"
+    criterion_ids:
+      - C1
+    loop_cap: 3

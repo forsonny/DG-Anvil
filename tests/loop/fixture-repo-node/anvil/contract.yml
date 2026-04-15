@@ -1,0 +1,30 @@
+---
+anvil_contract_version: 1
+goal: "Expose a pure sum(a, b) function reachable from src/index.js."
+created: "2026-04-15"
+source_intent: "Fixture scenario: a minimal sum function whose four-level verification passes."
+criteria:
+  - id: C1
+    statement: "sum is defined, exercised with both branches, reachable from index, and tested."
+    exists:
+      paths:
+        - src/sum.js
+      symbols:
+        - sum
+    substantive:
+      coverage_min: 0.5
+      branches:
+        - "return a + b"
+    wired:
+      entry_point: src/index.js
+      reachable_symbols:
+        - sum
+    functional:
+      probe:
+        runner: "node --test"
+        target: tests
+        exit_code: 0
+        must_pass:
+          - sum_positive
+          - sum_negative
+---

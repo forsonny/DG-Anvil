@@ -1,0 +1,11 @@
+# rejection_rule: task_unknown_depends_on; expected_code: E_INVALID_PLAN
+# contract: rate-limit-001.yml
+anvil_plan_version: 1
+tasks:
+  - id: T1
+    wave: 0
+    title: "x"
+    criterion_ids:
+      - C1
+    depends_on:
+      - T42

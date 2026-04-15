@@ -1,0 +1,35 @@
+---
+anvil_contract_version: 1
+goal: "Fix token refresh race condition in auth middleware."
+created: "2026-04-15"
+source_intent: "Two concurrent refresh requests for the same session occasionally both succeed and the second overwrites the first."
+invariants:
+  no_new_dependencies: true
+  public_api_unchanged:
+    - "refreshToken"
+  coverage:
+    new_code_minimum: 0.9
+counter_examples:
+  L-2025-09-001: "Earlier attempt used session-local mutex; bypassed by a second process with a fresh session handle."
+criteria:
+  - id: C1
+    statement: "Concurrent refresh requests for one session produce exactly one successful token."
+    exists:
+      paths:
+        - "src/auth/refresh.js"
+      symbols:
+        - "refreshToken"
+    substantive:
+      coverage_min: 0.9
+      branches:
+        - "contended-refresh"
+        - "uncontended-refresh"
+    wired:
+      entry_point: "src/auth/middleware.js"
+      reachable_symbols:
+        - "refreshToken"
+    functional:
+      inputs:
+        - "50 concurrent refresh requests for one session"
+      expected: "exactly one token issued"
+---

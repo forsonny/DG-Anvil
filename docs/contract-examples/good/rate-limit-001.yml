@@ -1,0 +1,47 @@
+---
+anvil_contract_version: 1
+goal: "Add a rate-limiting layer to the public API."
+created: "2026-04-15"
+source_intent: "The team wants inbound public API calls capped at 100 requests per minute per client."
+criteria:
+  - id: C1
+    statement: "Rate limiter rejects over-quota requests with 429."
+    exists:
+      paths:
+        - "src/ratelimit.js"
+      symbols:
+        - "checkQuota"
+    substantive:
+      coverage_min: 0.8
+      branches:
+        - "over-quota"
+        - "under-quota"
+    wired:
+      entry_point: "src/server.js"
+      reachable_symbols:
+        - "checkQuota"
+    functional:
+      inputs:
+        - "101 requests in one minute from one client"
+      expected: "101st request yields HTTP 429"
+  - id: C2
+    statement: "Quota counters reset on a rolling 60-second window."
+    exists:
+      paths:
+        - "src/ratelimit.js"
+      symbols:
+        - "rollingWindow"
+    substantive:
+      coverage_min: 0.8
+      branches:
+        - "window-expired"
+        - "window-active"
+    wired:
+      entry_point: "src/server.js"
+      reachable_symbols:
+        - "rollingWindow"
+    functional:
+      inputs:
+        - "62 seconds of idle time then one request"
+      expected: "request succeeds"
+---

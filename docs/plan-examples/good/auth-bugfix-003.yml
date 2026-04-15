@@ -1,0 +1,9 @@
+# contract: auth-bugfix-003.yml
+anvil_plan_version: 1
+tasks:
+  - id: T1
+    wave: 0
+    title: "Introduce per-session refresh lock"
+    criterion_ids:
+      - C1
+    loop_cap: 5

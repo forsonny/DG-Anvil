@@ -1,0 +1,33 @@
+# Per-repository runtime state (created by the plugin at runtime, not committed)
+anvil/state.json
+anvil/trace.jsonl
+anvil/calibration.jsonl
+anvil/verify/
+
+# Global runtime state (lives at ~/.anvil/, never inside the repo)
+.anvil/
+
+# Worktrees the executor creates per task
+.anvil-worktrees/
+
+# Node
+node_modules/
+npm-debug.log
+yarn-error.log
+
+# OS / editors
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+.vscode/
+.idea/
+
+# Test scratch
+/tmp/
+coverage/
+*.log
+
+# Cassette recordings (recorded locally, not committed unless intentional)
+tests/cassettes/pressure/*.json
+!tests/cassettes/pressure/.gitkeep

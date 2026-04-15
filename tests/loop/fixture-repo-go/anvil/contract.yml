@@ -1,0 +1,30 @@
+---
+anvil_contract_version: 1
+goal: "Implement Sum and wire it through Run."
+created: "2026-04-15"
+source_intent: "Stage 4 fixture: third language (Go)."
+criteria:
+  - id: C1
+    statement: "Sum is defined, exercised, reachable from Run, and tested."
+    exists:
+      paths:
+        - sum.go
+      symbols:
+        - Sum
+    substantive:
+      branches:
+        - "a + b"
+      language: go
+    wired:
+      entry_point: app.go
+      reachable_symbols:
+        - Sum
+      language: go
+    functional:
+      probe:
+        runner: "go test"
+        target: ./...
+        exit_code: 0
+        must_pass:
+          - TestSumPositive
+---

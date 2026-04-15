@@ -1,0 +1,3 @@
+# rejection_rule: missing_tasks; expected_code: E_INVALID_PLAN
+# contract: rate-limit-001.yml
+anvil_plan_version: 1

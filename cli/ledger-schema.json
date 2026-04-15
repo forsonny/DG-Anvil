@@ -1,0 +1,50 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://dg-anvil/schemas/ledger-schema.json",
+  "title": "Anvil Ledger Entry",
+  "type": "object",
+  "required": [
+    "anvil_ledger_entry_version",
+    "id",
+    "created",
+    "contract_gap",
+    "evidence",
+    "remediation"
+  ],
+  "additionalProperties": true,
+  "properties": {
+    "anvil_ledger_entry_version": {
+      "type": "integer",
+      "const": 1
+    },
+    "id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "created": {
+      "type": "string",
+      "minLength": 1
+    },
+    "run_id": { "type": "string" },
+    "task_id": { "type": "string" },
+    "criterion_id": { "type": "string" },
+    "contract_gap": {
+      "type": "string",
+      "minLength": 1
+    },
+    "evidence": {
+      "type": "string",
+      "minLength": 1
+    },
+    "remediation": {
+      "type": "string",
+      "minLength": 1
+    },
+    "tags": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "source_contract_id": { "type": "string" },
+    "source_plan_id": { "type": "string" }
+  }
+}

@@ -1,0 +1,7 @@
+# rejection_rule: task_missing_criterion_ids; expected_code: E_INVALID_PLAN
+# contract: rate-limit-001.yml
+anvil_plan_version: 1
+tasks:
+  - id: T1
+    wave: 0
+    title: "x"

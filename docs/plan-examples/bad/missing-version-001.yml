@@ -1,0 +1,8 @@
+# rejection_rule: missing_version; expected_code: E_INVALID_PLAN
+# contract: rate-limit-001.yml
+tasks:
+  - id: T1
+    wave: 0
+    title: "x"
+    criterion_ids:
+      - C1

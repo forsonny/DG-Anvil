@@ -1,0 +1,9 @@
+# contract: ./contract.yml
+anvil_plan_version: 1
+tasks:
+  - id: T0
+    wave: 0
+    title: "Implement check_quota with rolling-window reset"
+    criterion_ids:
+      - C1
+    loop_cap: 3

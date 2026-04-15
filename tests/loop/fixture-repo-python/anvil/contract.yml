@@ -1,0 +1,33 @@
+---
+anvil_contract_version: 1
+goal: "Implement a rate-limited app.py wired to rate_limit.check_quota."
+created: "2026-04-15"
+source_intent: "Fixture for Stage 3: first run fails on under-specified contract; reset injects counter-example; second run passes."
+counter_examples:
+  L-2026-04-15-fixture: "Rolling-window reset must be observable: the counter must return to zero after the window expires."
+criteria:
+  - id: C1
+    statement: "check_quota is defined, exercised with both window states, reachable from app, and tested."
+    exists:
+      paths:
+        - src/rate_limit.py
+      symbols:
+        - check_quota
+    substantive:
+      branches:
+        - window_start
+        - count
+    wired:
+      entry_point: src/app.py
+      reachable_symbols:
+        - check_quota
+      language: python
+    functional:
+      probe:
+        runner: "python -m pytest"
+        target: tests
+        exit_code: 0
+        must_pass:
+          - test_under_quota
+          - test_window_reset
+---

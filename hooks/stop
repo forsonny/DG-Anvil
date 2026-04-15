@@ -1,0 +1,4 @@
+#!/usr/bin/env bash
+if ! command -v bash >/dev/null 2>&1; then exit 0; fi
+node "${CLAUDE_PLUGIN_ROOT:-.}/cli/anvil.js" hook stop 2>/dev/null || true
+exit 0

@@ -1,0 +1,18 @@
+# rejection_rule: cyclic_dependency; expected_code: E_INVALID_PLAN
+# contract: rate-limit-001.yml
+anvil_plan_version: 1
+tasks:
+  - id: T1
+    wave: 0
+    title: "x"
+    criterion_ids:
+      - C1
+    depends_on:
+      - T2
+  - id: T2
+    wave: 0
+    title: "y"
+    criterion_ids:
+      - C2
+    depends_on:
+      - T1

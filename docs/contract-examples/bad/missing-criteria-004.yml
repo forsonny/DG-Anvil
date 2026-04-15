@@ -1,0 +1,7 @@
+# rejection_rule: missing_criteria; expected_code: E_INVALID_CONTRACT
+---
+anvil_contract_version: 1
+goal: "Do."
+created: "2026-04-15"
+source_intent: "User said."
+---

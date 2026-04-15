@@ -1,0 +1,11 @@
+{
+  "name": "fixture-repo-node",
+  "version": "0.1.0",
+  "private": true,
+  "dependencies": {},
+  "devDependencies": {},
+  "scripts": {
+    "test": "node --test tests"
+  },
+  "engines": { "node": ">=20.0.0" }
+}

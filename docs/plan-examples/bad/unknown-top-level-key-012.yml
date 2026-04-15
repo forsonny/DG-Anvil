@@ -1,0 +1,10 @@
+# rejection_rule: unknown_top_level_key; expected_code: E_INVALID_PLAN
+# contract: rate-limit-001.yml
+anvil_plan_version: 1
+nefarious_key: "should not exist"
+tasks:
+  - id: T1
+    wave: 0
+    title: "x"
+    criterion_ids:
+      - C1

@@ -1,0 +1,23 @@
+# rejection_rule: counter_example_not_string; expected_code: E_INVALID_CONTRACT
+---
+anvil_contract_version: 1
+goal: "Do."
+created: "2026-04-15"
+source_intent: "User said."
+counter_examples:
+  L-1: 42
+criteria:
+  - id: C1
+    statement: s
+    exists:
+      paths:
+        - x.js
+    substantive:
+      coverage_min: 0.5
+    wired:
+      entry_point: x.js
+    functional:
+      inputs:
+        - a
+      expected: b
+---

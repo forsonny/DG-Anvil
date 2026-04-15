@@ -1,0 +1,1 @@
+Fixture repo: python. Used by `loop.test.js` to exercise the Anvil loop against a deliberately under-specified contract. First run fails Verify; reset appends a non-null lesson; second run with the injected counter-example passes.
