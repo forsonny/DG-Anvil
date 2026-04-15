@@ -360,11 +360,14 @@ function shipHandler(argv) {
 
 function hookHandler(argv) {
   const sub = argv[1];
-  if (!sub) { writeError(CODES.E_MISSING_ARG, 'hook requires a name', { subcommand: 'hook' }); process.exit(1); return; }
-  const tracePath = path.join(process.cwd(), 'anvil', 'trace.jsonl');
-  try {
-    hooksLib.emitHookEvent({ tracePath, hookName: sub, outcome: 'start' });
-  } catch (_) {}
+  if (!sub) { process.exit(0); return; }
+  const anvilDir = path.join(process.cwd(), 'anvil');
+  if (fs.existsSync(anvilDir)) {
+    const tracePath = path.join(anvilDir, 'trace.jsonl');
+    try {
+      hooksLib.emitHookEvent({ tracePath, hookName: sub, outcome: 'start' });
+    } catch (_) {}
+  }
   process.exit(0);
 }
 
