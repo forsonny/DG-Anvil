@@ -7,6 +7,8 @@ description: Dispatch one fresh subagent per plan task inside a per-task git wor
 
 This skill dispatches one subagent per plan task, inside a per-task git worktree. Every subagent receives the task record and the contract inlined; the orchestrator reads only the captured diff and the captured tool-output. It does not read implementer narration. State never carries across dispatches; every briefing is composed from the parsed contract and parsed plan.
 
+**Invoking the Anvil CLI:** the CLI is `cli/anvil.js` inside the plugin directory, NOT on `PATH`. Every `anvil` invocation below means `node "$CLAUDE_PLUGIN_ROOT/cli/anvil.js"`.
+
 ## When to Use
 
 Invoked by the orchestrator for each plan task once the task's wave unlocks. Not invoked by user prompts. Every task gets its own fresh subagent and its own worktree; two tasks never share a subagent or a worktree.
@@ -14,7 +16,7 @@ Invoked by the orchestrator for each plan task once the task's wave unlocks. Not
 ## Process
 
 1. Read the confirmed `anvil/contract.yml` and the confirmed `anvil/plan.yml`.
-2. For the task at hand, create a fresh worktree via `anvil run --task <id>`, which delegates to `cli/lib/worktree.js create`.
+2. For the task at hand, create a fresh worktree via `node "$CLAUDE_PLUGIN_ROOT/cli/anvil.js" run --task <id>`, which delegates to `cli/lib/worktree.js create`.
 3. Compose the subagent briefing: the task record (id, title, wave, depends_on, criterion_ids), the full contract, and the worktree path. Nothing else. No prior task's diff, no prior task's rationale.
 4. Dispatch a fresh subagent with the briefing. The subagent works only inside the worktree. Every tool call's raw output is captured to `<worktreePath>/anvil/tool-output.jsonl`. The diff is captured to `<worktreePath>/anvil/diff.patch`.
 5. When the subagent finishes, return `{ diffPath, toolOutputPath, status, briefingHash }`. Discard the subagent's narration.
@@ -40,7 +42,7 @@ If any of these conditions obtain, the dispatch is rejected:
 
 Check each dispatch with:
 
-1. `anvil run --task <id>` exits 0 on success or non-zero with a structured `{error, code, details}` on stderr.
+1. `node "$CLAUDE_PLUGIN_ROOT/cli/anvil.js" run --task <id>` exits 0 on success or non-zero with a structured `{error, code, details}` on stderr.
 2. `<worktreePath>/anvil/diff.patch` exists; is non-empty iff the task produced any change; is the entire diff captured as-is.
 3. `<worktreePath>/anvil/tool-output.jsonl` exists; each line is a valid JSON record matching the closed tool-output schema.
 4. The orchestrator's `anvil/state.json` contains no key whose value is a free-form string from the subagent's narration.

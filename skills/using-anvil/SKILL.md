@@ -27,6 +27,8 @@ Five commands surfaced by the plugin:
 - `/abort` - stop the run, capture a lesson if appropriate.
 - `/ledger` - query the global lesson ledger.
 
+**Invoking the Anvil CLI:** the CLI binary is `cli/anvil.js` inside the plugin directory and is NOT on `PATH`. Always invoke it as `node "$CLAUDE_PLUGIN_ROOT/cli/anvil.js" <subcommand> ...`. Every command example in every skill should be read this way.
+
 ## When to Use
 
 Loaded by `hooks/session-start` on every fresh Claude Code session and after any `/clear` or `/compact`. Re-load it at the start of any sub-session where the contract must be rehydrated into context.
@@ -59,4 +61,4 @@ If any of these conditions obtain, stop and route back to the loop:
 
 ## Verification
 
-Check the current loop state with `anvil contract --validate` and `anvil plan --validate`. Both must exit 0 for the loop to proceed. If either exits non-zero, the structured error names the failing invariant and the skill to route to.
+Check the current loop state with `node "$CLAUDE_PLUGIN_ROOT/cli/anvil.js" contract --validate anvil/contract.yml` and `node "$CLAUDE_PLUGIN_ROOT/cli/anvil.js" plan --validate anvil/plan.yml --contract anvil/contract.yml`. Both must exit 0 for the loop to proceed. If either exits non-zero, the structured error names the failing invariant and the skill to route to.

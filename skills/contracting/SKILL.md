@@ -7,6 +7,8 @@ description: Author a machine-readable contract before execution. Produces anvil
 
 This skill produces `anvil/contract.yml`. Every criterion populates four verification-level slots (Exists, Substantive, Wired, Functional) as grammatical slots, not optional annotations. Counter-examples come from the global Ledger and are injected into the draft verbatim from each matching lesson's `remediation.counter_example_text` field. A contract that does not parse into all four levels on every criterion does not get saved.
 
+**Invoking the Anvil CLI:** the CLI is shipped as `cli/anvil.js` inside the plugin directory. It is NOT on `PATH`. Every invocation in this skill uses `node "$CLAUDE_PLUGIN_ROOT/cli/anvil.js" <subcommand> ...`. Treat `$ANVIL` as shorthand for that command prefix.
+
 ## When to Use
 
 Auto-invoked by `/start <intent>`. Invoked by the orchestrator whenever a task stream lacks a confirmed `anvil/contract.yml`. Once a contract is confirmed, the skill is not re-invoked until the user `/start`s a new stream or explicitly edits the contract.
@@ -14,7 +16,7 @@ Auto-invoked by `/start <intent>`. Invoked by the orchestrator whenever a task s
 ## Process
 
 1. Parse the user intent into a `source_intent` string and extract pattern tags (nouns and verbs that describe the surface the change touches).
-2. Query the Ledger for matching prior lessons: `anvil ledger query <pattern>` for each extracted pattern. Collect the returned lessons.
+2. Query the Ledger for matching prior lessons. For each extracted pattern run: `node "$CLAUDE_PLUGIN_ROOT/cli/anvil.js" ledger query <pattern>`. Collect the returned lessons.
 3. Draft `anvil/contract.yml`. For every criterion, populate all four verification-level slots. The Substantive slot names observable side effects (coverage thresholds, branch names, state transitions). Prose-only Substantive is invalid; rewrite until the Substantive slot names what the test will detect.
 4. Inject returned lessons as a `counter_examples` YAML mapping whose keys are lesson ids and whose values are each lesson's `remediation.counter_example_text` field verbatim. Do not fall back to other lesson fields; if `remediation.counter_example_text` is empty, skip the lesson and surface the gap. Set `state.meta.contract_unconfirmed = true` via `cli/lib/io.js writeFileUtf8` atomic-rename when the draft is written.
 5. Present the draft to the user for one-shot binary confirmation: accept or reject. No silent auto-pick. No list-of-N gate.
@@ -41,7 +43,7 @@ If any of these conditions obtain, the draft is rejected:
 
 Before presenting the draft, run in order:
 
-1. `anvil contract --validate anvil/contract.yml` exits 0.
+1. `node "$CLAUDE_PLUGIN_ROOT/cli/anvil.js" contract --validate anvil/contract.yml` exits 0.
 2. Every criterion's four verification-level slots are non-empty objects.
-3. `anvil ledger query` was run for each extracted pattern and the Counter-examples section reflects the top-five aggregate results, or the section is absent because no lessons matched.
+3. `node "$CLAUDE_PLUGIN_ROOT/cli/anvil.js" ledger query` was run for each extracted pattern and the Counter-examples section reflects the top-five aggregate results, or the section is absent because no lessons matched.
 4. The draft parses with `anvil/contract.yml`'s frontmatter version equal to 1.

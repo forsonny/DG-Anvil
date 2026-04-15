@@ -7,6 +7,8 @@ description: Decompose a confirmed contract into an atomic task DAG with wave or
 
 This skill produces `anvil/plan.yml` as a task DAG with wave ordering. An atomic task is one that produces one diff that one Verify pass can score. Every task names the contract criterion id(s) it is accountable for; tasks without citations are invalid and do not execute. Waves are topologically sorted: a task in wave `k` depends only on tasks in waves strictly less than `k`.
 
+**Invoking the Anvil CLI:** the CLI is `cli/anvil.js` inside the plugin directory, NOT on `PATH`. Use `node "$CLAUDE_PLUGIN_ROOT/cli/anvil.js" <subcommand> ...` for every invocation.
+
 ## When to Use
 
 Invoked by the orchestrator after `anvil/contract.yml` is confirmed. Not invoked from user prompts directly. If the contract is edited after the plan is written, this skill is re-invoked to regenerate the plan from scratch.
@@ -17,7 +19,7 @@ Invoked by the orchestrator after `anvil/contract.yml` is confirmed. Not invoked
 2. Decompose the work into atomic tasks. An atomic task produces one diff that one Verify pass can score. Cross-cutting refactors that touch three criteria should become three tasks, not one.
 3. For every task, name the contract criterion id(s) in `criterion_ids`. A task with an empty citation list is invalid. Re-run decomposition until every criterion is covered by at least one task.
 4. Assign a `wave` integer per task. Wave 0 has no `depends_on`; wave `k` tasks depend only on tasks whose wave is less than `k`. Parallelism is the default; tasks in the same wave run in parallel worktrees.
-5. Write `anvil/plan.yml` and run `anvil plan --validate anvil/plan.yml --contract anvil/contract.yml`. Exit code 0 is required to save.
+5. Write `anvil/plan.yml` and run `node "$CLAUDE_PLUGIN_ROOT/cli/anvil.js" plan --validate anvil/plan.yml --contract anvil/contract.yml`. Exit code 0 is required to save.
 6. If validation fails, surface the `details.rule` string to the orchestrator; do not save a half-valid plan.
 
 ## Rationalizations
@@ -40,7 +42,7 @@ If any of these conditions obtain, the plan is rejected:
 
 Before saving the plan, run in order:
 
-1. `anvil plan --validate anvil/plan.yml --contract anvil/contract.yml` exits 0.
+1. `node "$CLAUDE_PLUGIN_ROOT/cli/anvil.js" plan --validate anvil/plan.yml --contract anvil/contract.yml` exits 0.
 2. Every contract criterion id appears in at least one task's `criterion_ids` array.
 3. The task DAG, interpreted via `topologicalWaves`, produces one wave per distinct `wave` integer and contains no cycles.
 4. Every task in wave `k > 0` has a `depends_on` whose members are tasks in waves `< k`.
