@@ -358,6 +358,22 @@ function shipHandler(argv) {
   process.exit(0);
 }
 
+function readStdinAnd(callback) {
+  let data = '';
+  let settled = false;
+  const done = function () {
+    if (settled) return;
+    settled = true;
+    callback(data);
+  };
+  if (process.stdin.isTTY) { done(); return; }
+  try { process.stdin.setEncoding('utf8'); } catch (_) {}
+  process.stdin.on('data', function (c) { data += c; });
+  process.stdin.on('end', done);
+  process.stdin.on('error', done);
+  setTimeout(done, 500);
+}
+
 function hookHandler(argv) {
   const sub = argv[1];
   if (!sub) { process.exit(0); return; }
@@ -367,6 +383,31 @@ function hookHandler(argv) {
     try {
       hooksLib.emitHookEvent({ tracePath, hookName: sub, outcome: 'start' });
     } catch (_) {}
+  }
+  if (sub === 'user-prompt-submit') {
+    readStdinAnd(function (payload) {
+      try {
+        const data = payload ? JSON.parse(payload) : {};
+        const prompt = (data.prompt || data.user_prompt || data.message || '').toString();
+        const statePath = path.join(anvilDir, 'state.json');
+        let state = null;
+        if (fs.existsSync(statePath)) {
+          try { state = JSON.parse(fs.readFileSync(statePath, 'utf8')); } catch (_) { state = null; }
+        }
+        const suggestion = hooksLib.maybeSuggestStart(prompt, state);
+        if (suggestion) {
+          const out = {
+            hookSpecificOutput: {
+              hookEventName: 'UserPromptSubmit',
+              additionalContext: suggestion.context
+            }
+          };
+          process.stdout.write(JSON.stringify(out) + '\n');
+        }
+      } catch (_) { /* never fail the hook on parse errors */ }
+      process.exit(0);
+    });
+    return;
   }
   process.exit(0);
 }

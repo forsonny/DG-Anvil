@@ -48,3 +48,56 @@ test('contractUnconfirmedRouting routes to contracting when flag set', () => {
   const r = hooks.contractUnconfirmedRouting({ meta: { contract_unconfirmed: true } });
   assert.strictEqual(r.route, 'contracting');
 });
+
+test('detectCodeChangeIntent: fix verb triggers', () => {
+  assert.strictEqual(hooks.detectCodeChangeIntent('fix the rate limiter bug'), true);
+});
+
+test('detectCodeChangeIntent: add verb triggers', () => {
+  assert.strictEqual(hooks.detectCodeChangeIntent('add a retry for 429 responses'), true);
+});
+
+test('detectCodeChangeIntent: bug noun triggers', () => {
+  assert.strictEqual(hooks.detectCodeChangeIntent('there is a bug in the cache layer'), true);
+});
+
+test('detectCodeChangeIntent: informational question does not trigger', () => {
+  assert.strictEqual(hooks.detectCodeChangeIntent('how does the rate limiter work?'), false);
+});
+
+test('detectCodeChangeIntent: explain request does not trigger', () => {
+  assert.strictEqual(hooks.detectCodeChangeIntent('explain the cache layer'), false);
+});
+
+test('detectCodeChangeIntent: what-is does not trigger', () => {
+  assert.strictEqual(hooks.detectCodeChangeIntent('what is a rolling window?'), false);
+});
+
+test('detectCodeChangeIntent: slash command bypassed', () => {
+  assert.strictEqual(hooks.detectCodeChangeIntent('/start fix the bug'), false);
+});
+
+test('detectCodeChangeIntent: short prompt bypassed', () => {
+  assert.strictEqual(hooks.detectCodeChangeIntent('hi'), false);
+});
+
+test('maybeSuggestStart: suggests when intent detected and no active run', () => {
+  const r = hooks.maybeSuggestStart('fix the rate limiter bug', null);
+  assert.ok(r);
+  assert.strictEqual(r.suggest, 'route_to_start');
+  assert.ok(r.context.includes('/start'));
+});
+
+test('maybeSuggestStart: silent when in-flight task running', () => {
+  const state = { tasks: { T1: { status: 'running' } } };
+  assert.strictEqual(hooks.maybeSuggestStart('fix the bug', state), null);
+});
+
+test('maybeSuggestStart: silent when contract unconfirmed', () => {
+  const state = { meta: { contract_unconfirmed: true } };
+  assert.strictEqual(hooks.maybeSuggestStart('fix the bug', state), null);
+});
+
+test('maybeSuggestStart: silent for informational prompt', () => {
+  assert.strictEqual(hooks.maybeSuggestStart('explain how it works', null), null);
+});

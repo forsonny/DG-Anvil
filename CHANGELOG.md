@@ -6,6 +6,28 @@ All notable changes to DG-Anvil are documented here. The format follows [Keep a 
 
 Nothing yet.
 
+## [0.3.0] - 2026-04-16
+
+Auto-detect: catch code-change intent even when the user forgets `/start`.
+
+### Added
+
+- **`UserPromptSubmit` intent detection.** The `user-prompt-submit` hook now scans every user message for code-change intent (verbs like `fix`, `add`, `implement`, `refactor`; problem nouns like `bug`, `issue`, `broken`). When intent is detected and no Anvil run is active, the hook emits a structured `hookSpecificOutput.additionalContext` event that instructs Claude to suggest `/start <intent>` before making any code edits. Pure information requests (`explain`, `describe`, `what is`, `how does`) are ignored.
+- **`cli/lib/hooks.js`** exports two new functions: `detectCodeChangeIntent(text)` (predicate) and `maybeSuggestStart(prompt, state)` (returns a suggestion object or null). Ten new unit tests cover the positive, negative, and silencing cases.
+- **Silencing rules** so the suggestion does not fire when it should not:
+  - If any task in `anvil/state.json` is `running`, `queued`, `verified`, `judged`, or `escalated`, the hook stays silent.
+  - If `state.meta.contract_unconfirmed === true`, the contract-confirmation routing takes precedence.
+  - Prompts starting with a slash command (`/start`, `/continue`, ...) are bypassed.
+  - Prompts under 5 characters are bypassed.
+
+### How it works in practice
+
+If a user types "there's a bug in the cache layer" without `/start`, Claude receives injected context telling it to ask the user to run `/start <intent>` before making changes. The user can still opt out explicitly ("just fix it, no contract") and Claude will proceed. The Ledger discipline is preserved by default without forcing users to memorise the slash command.
+
+### Structural guarantee
+
+This is not an advisory hook (Invariant 1). The hook emits a structured JSON event to stdout; Claude Code parses the event and injects it into the model context. No warnings are printed to stderr; nothing is silently suppressed.
+
 ## [0.2.1] - 2026-04-16
 
 Docs-only release. Fixes broken documentation references.
@@ -78,7 +100,8 @@ Initial release. Implements the complete Anvil loop end to end across five build
 - **Null-lesson prohibition.** Lessons with empty `contract_gap`, `evidence`, or `remediation` are rejected at the write path.
 - **Zero runtime dependencies.** `package.json` declares no `dependencies` or `devDependencies`.
 
-[Unreleased]: https://github.com/forsonny/DG-Anvil/compare/v0.2.1...HEAD
+[Unreleased]: https://github.com/forsonny/DG-Anvil/compare/v0.3.0...HEAD
+[0.3.0]: https://github.com/forsonny/DG-Anvil/compare/v0.2.1...v0.3.0
 [0.2.1]: https://github.com/forsonny/DG-Anvil/compare/v0.2.0...v0.2.1
 [0.2.0]: https://github.com/forsonny/DG-Anvil/compare/v0.1.0...v0.2.0
 [0.1.0]: https://github.com/forsonny/DG-Anvil/releases/tag/v0.1.0
