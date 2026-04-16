@@ -31,7 +31,22 @@ function tokenStillValid(state) {
   return Date.parse(state.meta.ship_approval_token_expires_at) > Date.now();
 }
 
-function shouldBlock(toolUse, state) {
+const WRITE_TOOLS = new Set(['Write', 'Edit', 'MultiEdit', 'NotebookEdit']);
+
+function isInsideAllowedArea(filePath, repoRoot) {
+  if (!filePath) return false;
+  const normalized = String(filePath).replace(/\\/g, '/');
+  if (/\.anvil-worktrees\//.test(normalized)) return true;
+  if (/(^|\/)anvil\/(contract|plan|state|trace|calibration|verify)/.test(normalized)) return true;
+  return false;
+}
+
+function inActiveRun(state) {
+  if (!state || !state.tasks) return false;
+  return Object.values(state.tasks).some(t => ['running', 'queued', 'verified', 'judged', 'escalated'].includes(t.status));
+}
+
+function shouldBlock(toolUse, state, extras) {
   if (tokenStillValid(state)) return null;
   const cmd = toolUse && toolUse.command ? String(toolUse.command) : '';
   for (const re of DESTRUCTIVE_PATTERNS) {
@@ -44,6 +59,15 @@ function shouldBlock(toolUse, state) {
     if (re.test(filePath)) {
       return { reason: 'protected_path', path: filePath };
     }
+  }
+  const toolName = extras && extras.toolName;
+  if (toolName && WRITE_TOOLS.has(toolName) && inActiveRun(state) && filePath && !isInsideAllowedArea(filePath)) {
+    return {
+      reason: 'orchestrator_edit_outside_worktree',
+      tool: toolName,
+      path: filePath,
+      message: 'An Anvil run is active. The orchestrator may only edit paths under .anvil-worktrees/ or anvil/. All production-code edits must happen inside a task worktree via the executing skill (dispatch a subagent). Use anvil merge-task --task <id> to land completed work.'
+    };
   }
   return null;
 }
@@ -78,6 +102,8 @@ function contractUnconfirmedRouting(state) {
 }
 
 const INTENT_VERBS = /\b(fix|add|implement|create|build|change|update|refactor|remove|delete|rewrite|port|migrate|upgrade|bump|rename|extract|wire|integrate|enable|disable|introduce|replace)\b/i;
+// inActiveRun defined earlier; alias here for callers that import via maybeSuggestStart.
+
 const INTENT_PROBLEMS = /\b(bug|issue|broken|doesn'?t work|not working|fails|failed|failing|crash(es|ed|ing)?|regression|incorrect|wrong output)\b/i;
 const INFORMATIONAL_LEADERS = /^(what|how|why|when|where|who|which)\b/i;
 const INFORMATIONAL_VERBS = /\b(explain|describe|show me|tell me|walk me through|clarify|define|document|summari[sz]e|review\s+(my|the|this))\b/i;
@@ -90,11 +116,6 @@ function detectCodeChangeIntent(text) {
   if (INFORMATIONAL_LEADERS.test(t)) return false;
   if (INFORMATIONAL_VERBS.test(t)) return false;
   return INTENT_VERBS.test(t) || INTENT_PROBLEMS.test(t);
-}
-
-function inActiveRun(state) {
-  if (!state || !state.tasks) return false;
-  return Object.values(state.tasks).some(t => ['running', 'queued', 'verified', 'judged', 'escalated'].includes(t.status));
 }
 
 function maybeSuggestStart(prompt, state) {

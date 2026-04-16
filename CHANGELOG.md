@@ -6,6 +6,32 @@ All notable changes to DG-Anvil are documented here. The format follows [Keep a 
 
 Nothing yet.
 
+## [0.5.0] - 2026-04-16
+
+Worktree lifecycle + orchestrator-edit blocker. Fixes the three-bug cascade observed during real-world testing: stale worktrees failing retry, orchestrator improvising `git merge`/`git stash` manually, and orchestrator writing production files directly outside any worktree.
+
+### Added
+
+- **`anvil merge-task --task <id>`.** Commits pending changes in the task worktree, merges the branch back into the parent with `--no-ff`, removes the worktree, and deletes the branch. The orchestrator never runs `git commit`, `git merge`, `git stash`, or manual conflict resolution - the plugin owns the worktree lifecycle.
+- **`anvil reset-task --task <id>`.** Force-removes a stale worktree (even if git's internal state is corrupt) and deletes the branch, without trying to merge. For recovery from a stuck or aborted prior run.
+- **Pre-tool-use orchestrator guard.** The `pre-tool-use` hook now blocks `Write`, `Edit`, `MultiEdit`, and `NotebookEdit` tool calls targeting paths *outside* `.anvil-worktrees/` or `anvil/` whenever an Anvil run is active. The block is structural (exit 2 with a `permissionDecision: "deny"` payload and an `E_HOOK_BLOCKED` error), per Invariant 1. Reason string points the orchestrator at `anvil merge-task` as the correct landing path.
+
+### Changed
+
+- **`cli/lib/worktree.js create`** now calls `forceRemoveStale` before `git worktree add`. A prior failed or aborted run no longer blocks retry with `a branch named 'anvil/task-T01' already exists`. The force-clean removes the worktree directory, runs `git worktree prune`, and deletes the stale branch.
+- **`skills/executing/SKILL.md` Process** now has eight numbered steps. Orchestrator responsibilities are explicit: dispatch via Task tool, run `anvil verify`, then `anvil merge-task` on green or `anvil reset-task` on stuck. The skill's Red Flags now reject direct orchestrator file edits and manual git operations.
+
+### Fixed
+
+- **Stale worktree/branch blocks retry.** See real-world failure: `fatal: a branch named 'anvil/task-T01' already exists`.
+- **Orchestrator improvising git operations.** Prior releases had no surface for "land this task", so the orchestrator ran `git commit`, `git merge`, `git stash` in the main thread, hitting conflicts and improvising recovery. `anvil merge-task` is now the single landing surface.
+- **Orchestrator editing production files directly.** Prior releases would silently let `Write(tailwind.config.mjs)` fire in the main repo bypass worktree + Verify discipline. The `pre-tool-use` hook now blocks such calls during an active run.
+
+### Tests
+
+- Existing 30 hooks unit tests still pass.
+- Manual verification: pre-tool-use hook blocks a Write to `/c/dev/anime website/src/main.js` during an active run and allows a Write to `/repo/.anvil-worktrees/task-T1/src/main.js`.
+
 ## [0.4.0] - 2026-04-16
 
 Move heavy skill work out of the main conversation thread.
@@ -130,7 +156,8 @@ Initial release. Implements the complete Anvil loop end to end across five build
 - **Null-lesson prohibition.** Lessons with empty `contract_gap`, `evidence`, or `remediation` are rejected at the write path.
 - **Zero runtime dependencies.** `package.json` declares no `dependencies` or `devDependencies`.
 
-[Unreleased]: https://github.com/forsonny/DG-Anvil/compare/v0.4.0...HEAD
+[Unreleased]: https://github.com/forsonny/DG-Anvil/compare/v0.5.0...HEAD
+[0.5.0]: https://github.com/forsonny/DG-Anvil/compare/v0.4.0...v0.5.0
 [0.4.0]: https://github.com/forsonny/DG-Anvil/compare/v0.3.0...v0.4.0
 [0.3.0]: https://github.com/forsonny/DG-Anvil/compare/v0.2.1...v0.3.0
 [0.2.1]: https://github.com/forsonny/DG-Anvil/compare/v0.2.0...v0.2.1

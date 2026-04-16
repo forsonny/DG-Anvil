@@ -40,6 +40,8 @@ const HELP_TEXT = [
   '  escalation list                 List escalated tasks.',
   '  escalation describe --task <id> Inspect one escalated task.',
   '  cassette record --scenario <s> --out <p>  Record a cassette for replay tests.',
+  '  merge-task --task <id>          Merge the task worktree back and clean up.',
+  '  reset-task --task <id>          Force-remove a stale worktree + branch for a task.',
   '  contract-migrate --in <file> --out <file>  Identity migrate v1->v1.',
   '  plan-migrate --in <file> --out <file>      Identity migrate v1->v1.',
   '  ledger-migrate --in <file> --out <file>    Identity migrate v1->v1.',
@@ -409,6 +411,36 @@ function hookHandler(argv) {
     });
     return;
   }
+  if (sub === 'pre-tool-use') {
+    readStdinAnd(function (payload) {
+      try {
+        const data = payload ? JSON.parse(payload) : {};
+        const toolName = data.tool_name || data.toolName || null;
+        const toolInput = data.tool_input || data.toolInput || {};
+        const statePath = path.join(anvilDir, 'state.json');
+        let state = null;
+        if (fs.existsSync(statePath)) {
+          try { state = JSON.parse(fs.readFileSync(statePath, 'utf8')); } catch (_) { state = null; }
+        }
+        const blocked = hooksLib.shouldBlock(toolInput, state, { toolName });
+        if (blocked) {
+          const out = {
+            hookSpecificOutput: {
+              hookEventName: 'PreToolUse',
+              permissionDecision: 'deny',
+              permissionDecisionReason: blocked.message || ('Anvil policy blocked this tool use: ' + blocked.reason)
+            }
+          };
+          process.stdout.write(JSON.stringify(out) + '\n');
+          process.stderr.write(JSON.stringify({ error: 'Anvil hook blocked ' + toolName, code: 'E_HOOK_BLOCKED', details: blocked }) + '\n');
+          process.exit(2);
+          return;
+        }
+      } catch (_) { /* fail open on parse errors */ }
+      process.exit(0);
+    });
+    return;
+  }
   process.exit(0);
 }
 
@@ -513,6 +545,53 @@ function planMigrateHandler(argv) {
   })(argv);
 }
 
+function mergeTaskHandler(argv) {
+  const schema = {
+    positional: [],
+    options: {
+      task: { type: 'string', required: true },
+      'repo-root': { type: 'string' },
+      message: { type: 'string' }
+    },
+    shortAliases: {}
+  };
+  let parsed;
+  try { parsed = args.parse(argv.slice(1), schema); }
+  catch (err) { handleErr(err); return; }
+  const repoRoot = parsed.options['repo-root'] || process.cwd();
+  try {
+    const r = worktree.mergeBack({
+      repoRoot,
+      taskId: parsed.options.task,
+      commitMessage: parsed.options.message
+    });
+    process.stdout.write(JSON.stringify({ ok: true, merged: r }) + '\n');
+    process.exit(0);
+  } catch (err) { handleErr(err); }
+}
+
+function resetTaskHandler(argv) {
+  const schema = {
+    positional: [],
+    options: {
+      task: { type: 'string', required: true },
+      'repo-root': { type: 'string' }
+    },
+    shortAliases: {}
+  };
+  let parsed;
+  try { parsed = args.parse(argv.slice(1), schema); }
+  catch (err) { handleErr(err); return; }
+  const repoRoot = parsed.options['repo-root'] || process.cwd();
+  const branch = 'anvil/task-' + parsed.options.task;
+  const worktreePath = path.join(repoRoot, '.anvil-worktrees', 'task-' + parsed.options.task);
+  try {
+    worktree.forceRemoveStale(repoRoot, worktreePath, branch);
+    process.stdout.write(JSON.stringify({ ok: true, reset: { taskId: parsed.options.task, branch, worktreePath } }) + '\n');
+    process.exit(0);
+  } catch (err) { handleErr(err); }
+}
+
 function ledgerMigrateHandler(argv) {
   const schema = {
     positional: [],
@@ -553,7 +632,9 @@ const DISPATCH = {
   cassette: cassetteHandler,
   'contract-migrate': contractMigrateHandler,
   'plan-migrate': planMigrateHandler,
-  'ledger-migrate': ledgerMigrateHandler
+  'ledger-migrate': ledgerMigrateHandler,
+  'merge-task': mergeTaskHandler,
+  'reset-task': resetTaskHandler
 };
 
 function main(argv) {
