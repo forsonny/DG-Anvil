@@ -15,12 +15,12 @@ Invoked by the orchestrator after `anvil/contract.yml` is confirmed. Not invoked
 
 ## Process
 
-1. Read the confirmed `anvil/contract.yml` via `cli/lib/contract.js loadAndValidate`.
-2. Decompose the work into atomic tasks. An atomic task produces one diff that one Verify pass can score. Cross-cutting refactors that touch three criteria should become three tasks, not one.
-3. For every task, name the contract criterion id(s) in `criterion_ids`. A task with an empty citation list is invalid. Re-run decomposition until every criterion is covered by at least one task.
-4. Assign a `wave` integer per task. Wave 0 has no `depends_on`; wave `k` tasks depend only on tasks whose wave is less than `k`. Parallelism is the default; tasks in the same wave run in parallel worktrees.
-5. Write `anvil/plan.yml` and run `node "$CLAUDE_PLUGIN_ROOT/cli/anvil.js" plan --validate anvil/plan.yml --contract anvil/contract.yml`. Exit code 0 is required to save.
-6. If validation fails, surface the `details.rule` string to the orchestrator; do not save a half-valid plan.
+Steps 1 and 4 run in the orchestrator's main thread. Steps 2 and 3 (decomposition + YAML authoring) are dispatched to a fresh subagent. The orchestrator holds only the confirmed contract and the written `anvil/plan.yml` file. It never holds the decomposition reasoning.
+
+1. Confirm `anvil/contract.yml` exists and validates (`node "$CLAUDE_PLUGIN_ROOT/cli/anvil.js" contract --validate anvil/contract.yml` exits 0). If it does not, route back to `contracting`; planning does not run against an unconfirmed contract.
+2. **Dispatch the `plan-drafter` agent** (defined at `agents/plan-drafter.md`) using the `Task` tool. Pass in the briefing: the repository path and the path to `anvil/contract.yml`. The subagent reads the contract, decomposes the work into an atomic task DAG with wave ordering, writes `anvil/plan.yml`, runs `anvil plan --validate`, and returns exactly one sentence. **Do NOT decompose or write the YAML inline in the orchestrator thread** - the orchestrator's context stays clean.
+3. Read the returned one-sentence summary from the subagent. If the summary indicates a validation failure, surface the `details.rule` string to the user and stop.
+4. The orchestrator now holds the task DAG by file reference (`anvil/plan.yml`). It does not re-read the whole plan for every subsequent dispatch; it reads individual task records as the `executing` skill requests them.
 
 ## Rationalizations
 
@@ -29,6 +29,7 @@ Reject the following shortcuts:
 - "This one task covers everything; no need to split." Scope creep disguises itself as efficiency; an atomic task is scorable, a combined task is not (failure-taxonomy row 4: Scope creep).
 - "Over-produce now and trim later." Over-production burns context and muddies the Verify signal (failure-taxonomy row 10: Over-production).
 - "The plan can drift from the spec; the agent will catch it later." Plan drift is silent until Verify fails on a criterion no task cited (failure-taxonomy row 26: Spec-to-plan drift).
+- "I'll decompose the tasks inline; it's faster." Inline decomposition fills the orchestrator context with reasoning that should live in a fresh subagent (failure-taxonomy row 16: Context-window collapse).
 
 ## Red Flags
 
@@ -37,6 +38,7 @@ If any of these conditions obtain, the plan is rejected:
 - A contract criterion id does not appear in any task's `criterion_ids` (failure-taxonomy row 26: Spec-to-plan drift).
 - A task's scope extends beyond the criterion it cites (failure-taxonomy row 4: Scope creep).
 - Two tasks in different waves touch the same file without a declared `depends_on` edge (failure-taxonomy row 17: Cross-task architectural drift).
+- The orchestrator decomposes tasks in its own thread instead of dispatching the `plan-drafter` agent (failure-taxonomy row 16: Context-window collapse).
 
 ## Verification
 

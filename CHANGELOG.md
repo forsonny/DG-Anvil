@@ -6,6 +6,36 @@ All notable changes to DG-Anvil are documented here. The format follows [Keep a 
 
 Nothing yet.
 
+## [0.4.0] - 2026-04-16
+
+Move heavy skill work out of the main conversation thread.
+
+### Added
+
+- **`agents/contract-drafter.md`.** A dedicated Claude Code subagent that drafts `anvil/contract.yml` in a fresh context. Takes the user's intent, the extracted pattern tags, and the Ledger query results as briefing; returns exactly one sentence to the orchestrator. The full YAML authoring, the counter-example injection, and the `anvil contract --validate` loop all happen inside the subagent so the main conversation stays clean.
+- **`agents/plan-drafter.md`.** A dedicated subagent that decomposes the confirmed `anvil/contract.yml` into an atomic task DAG and writes `anvil/plan.yml`. Returns exactly one sentence (task count + wave count); all the decomposition reasoning stays in the subagent context.
+- **`agents/` directory.** New top-level plugin component for dispatched subagents. Auto-discovered by Claude Code alongside `commands/`, `skills/`, and `hooks/`.
+
+### Changed
+
+- **`skills/contracting/SKILL.md` Process.** Step 3 now explicitly dispatches the `contract-drafter` agent via the `Task` tool instead of drafting YAML inline. The orchestrator holds only `source_intent`, the pattern tags, the Ledger results, and eventually the written contract file - never the drafting reasoning.
+- **`skills/planning/SKILL.md` Process.** Steps 2 and 3 now dispatch the `plan-drafter` agent. The orchestrator holds only the task DAG by file reference; individual task records are read as the `executing` skill requests them.
+
+### Fixed
+
+- **Main conversation context bloat.** In prior releases, the `contracting` and `planning` skills drafted YAML and decomposed tasks inline in the main conversation thread, which filled the context window during the first two phases of every run. Heavy work now happens in fresh subagents per the design's "orchestrator holds artifacts, not narration" discipline; the main thread holds only file pointers and one-line status messages.
+
+### Audited: which phases already used subagents
+
+| Phase | Status at 0.4.0 |
+|---|---|
+| `contracting` | Dispatches `contract-drafter` (new in this release) |
+| `planning` | Dispatches `plan-drafter` (new in this release) |
+| `executing` | Already dispatched a fresh subagent per task at 0.1.0 |
+| `verifying` | External CLI probes; minimal LLM work - no subagent needed |
+| `judging` | Dispatches the Court as a fresh subagent at 0.1.0 |
+| `resetting` | Composes lesson then CLI-appends; small enough to stay inline |
+
 ## [0.3.0] - 2026-04-16
 
 Auto-detect: catch code-change intent even when the user forgets `/start`.
@@ -100,7 +130,8 @@ Initial release. Implements the complete Anvil loop end to end across five build
 - **Null-lesson prohibition.** Lessons with empty `contract_gap`, `evidence`, or `remediation` are rejected at the write path.
 - **Zero runtime dependencies.** `package.json` declares no `dependencies` or `devDependencies`.
 
-[Unreleased]: https://github.com/forsonny/DG-Anvil/compare/v0.3.0...HEAD
+[Unreleased]: https://github.com/forsonny/DG-Anvil/compare/v0.4.0...HEAD
+[0.4.0]: https://github.com/forsonny/DG-Anvil/compare/v0.3.0...v0.4.0
 [0.3.0]: https://github.com/forsonny/DG-Anvil/compare/v0.2.1...v0.3.0
 [0.2.1]: https://github.com/forsonny/DG-Anvil/compare/v0.2.0...v0.2.1
 [0.2.0]: https://github.com/forsonny/DG-Anvil/compare/v0.1.0...v0.2.0
