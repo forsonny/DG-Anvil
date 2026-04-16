@@ -1,7 +1,7 @@
 {
   "name": "dg-anvil",
-  "version": "0.2.0",
-  "description": "DG-Anvil plugin; canonical design under reports/Anvil-Design/.",
+  "version": "0.2.1",
+  "description": "DG-Anvil Claude Code plugin: contract-first, evidence-based development with a durable Ledger and an adversarial Court. Design provenance under dev/.",
   "engines": {
     "node": ">=20.0.0"
   },

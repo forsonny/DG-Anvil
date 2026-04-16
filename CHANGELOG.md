@@ -6,6 +6,24 @@ All notable changes to DG-Anvil are documented here. The format follows [Keep a 
 
 Nothing yet.
 
+## [0.2.1] - 2026-04-16
+
+Docs-only release. Fixes broken documentation references.
+
+### Added
+
+- **`dev/` folder** containing the design provenance that previously lived outside the repository: the thirteen `anvil-design/` canonical design documents, the workflow SVG, ten worked scenarios under `dev/anvil-design/scenarios/`, the build architecture at `dev/dg-anvil/00_Architecture.md`, and the five stage plans under `dev/dg-anvil/plans/`.
+- **`dev/README.md`** explaining what the folder is for, when to read it, and when not to.
+
+### Changed
+
+- `README.md` "Architecture" section now points at `dev/anvil-design/` and `dev/dg-anvil/` instead of the external `reports/` paths.
+- `package.json` description rewritten; no longer references the external `reports/` path.
+
+### Fixed
+
+- Broken documentation references. The prior release pointed at `reports/Anvil-Design/` and `reports/DG-Anvil/`, which were never shipped in the plugin repository, so clicking those links from a cloned copy of the repo produced a 404. All design docs now ship in-tree under `dev/`.
+
 ## [0.2.0] - 2026-04-16
 
 First post-bootstrap release. Fixes every installability blocker surfaced in real-world testing of `0.1.0`, and makes the contract confirmation gate legible to non-coders.
@@ -60,6 +78,7 @@ Initial release. Implements the complete Anvil loop end to end across five build
 - **Null-lesson prohibition.** Lessons with empty `contract_gap`, `evidence`, or `remediation` are rejected at the write path.
 - **Zero runtime dependencies.** `package.json` declares no `dependencies` or `devDependencies`.
 
-[Unreleased]: https://github.com/forsonny/DG-Anvil/compare/v0.2.0...HEAD
+[Unreleased]: https://github.com/forsonny/DG-Anvil/compare/v0.2.1...HEAD
+[0.2.1]: https://github.com/forsonny/DG-Anvil/compare/v0.2.0...v0.2.1
 [0.2.0]: https://github.com/forsonny/DG-Anvil/compare/v0.1.0...v0.2.0
 [0.1.0]: https://github.com/forsonny/DG-Anvil/releases/tag/v0.1.0

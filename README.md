@@ -6,7 +6,7 @@
 
 A plugin that turns "the agent thinks it's done" into "the agent has proven it's done."
 
-[![Version](https://img.shields.io/badge/version-0.2.0-blue.svg)](https://github.com/forsonny/DG-Anvil/releases)
+[![Version](https://img.shields.io/badge/version-0.2.1-blue.svg)](https://github.com/forsonny/DG-Anvil/releases)
 [![License: MIT](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
 [![Node](https://img.shields.io/badge/node-%3E%3D20.0.0-brightgreen.svg)](https://nodejs.org)
 [![Claude Code](https://img.shields.io/badge/Claude%20Code-plugin-orange.svg)](https://code.claude.com)
@@ -265,9 +265,11 @@ DG-Anvil's design is documented in two places:
 
 | Document | What it covers |
 |---|---|
-| `reports/Anvil-Design/00_intro.md` through `12_Bottom_Line.md` | Canonical product design: thesis, anatomy, contract grammar, ledger, court, observability |
-| `reports/DG-Anvil/00_Architecture.md` | Build architecture: file layout, schemas, invariants, stage dependency graph |
+| `dev/anvil-design/00_intro.md` through `12_Bottom_Line.md` | Canonical product design: thesis, anatomy, contract grammar, ledger, court, observability, scenarios |
+| `dev/dg-anvil/00_Architecture.md` + `dev/dg-anvil/plans/` | Build architecture and the five stage plans that produced the plugin |
 | `docs/failure-taxonomy.md` | The 30-row failure taxonomy that every pressure test cites by row number |
+
+See `dev/README.md` for a contributor-oriented overview of the design provenance.
 
 ### Key invariants (enforced in code, not prose)
 
