@@ -249,7 +249,7 @@ function judgeHandler(argv) {
   })();
 }
 
-const LEDGER_SUBCOMMANDS = new Set(['query', 'append', 'audit']);
+const LEDGER_SUBCOMMANDS = new Set(['query', 'append', 'audit', 'invalidate', 'retroactive']);
 
 function ledgerHandler(argv) {
   const sub = argv[1];
@@ -303,6 +303,55 @@ function ledgerHandler(argv) {
       const r = ledgerWrite.audit();
       process.stdout.write(JSON.stringify(r) + '\n');
       process.exit(r.ok ? 0 : 1);
+    } catch (err) { handleErr(err); }
+    return;
+  }
+  if (sub === 'invalidate') {
+    const schema = {
+      positional: [],
+      options: {
+        lesson: { type: 'string', required: true },
+        reason: { type: 'string', required: true }
+      },
+      shortAliases: {}
+    };
+    let parsed;
+    try { parsed = args.parse(argv.slice(2), schema); }
+    catch (err) { handleErr(err); return; }
+    try {
+      const r = ledgerWrite.invalidate(parsed.options.lesson, parsed.options.reason);
+      process.stdout.write(JSON.stringify({ ok: true, invalidated: parsed.options.lesson, marker_id: r.id }) + '\n');
+      process.exit(0);
+    } catch (err) { handleErr(err); }
+    return;
+  }
+  if (sub === 'retroactive') {
+    const schema = {
+      positional: [],
+      options: {
+        contract: { type: 'string', required: true },
+        criterion: { type: 'string', required: true },
+        'gap-note': { type: 'string', required: true }
+      },
+      shortAliases: {}
+    };
+    let parsed;
+    try { parsed = args.parse(argv.slice(2), schema); }
+    catch (err) { handleErr(err); return; }
+    try {
+      const contractObj = contractLib.loadAndValidate(parsed.options.contract).frontmatter;
+      const patterns = [];
+      const intent = contractObj.source_intent || '';
+      intent.split(/[^A-Za-z0-9]+/).filter(Boolean).forEach(t => patterns.push(t));
+      const r = ledgerWrite.retroactive({
+        contract: contractObj,
+        confirmed_gap_note: parsed.options['gap-note'],
+        criterion_id: parsed.options.criterion,
+        source_intent: intent,
+        patterns
+      });
+      process.stdout.write(JSON.stringify({ ok: true, lesson: r }) + '\n');
+      process.exit(0);
     } catch (err) { handleErr(err); }
     return;
   }
@@ -531,11 +580,38 @@ function migrateHandler(name, loaderValidator) {
 }
 
 function contractMigrateHandler(argv) {
-  return migrateHandler('contract', (filePath, raw) => {
-    const parsed = contractLib.parse(raw);
-    contractLib.validate(parsed);
-    return parsed;
-  })(argv);
+  const schema = {
+    positional: [],
+    options: {
+      in: { type: 'string', required: true },
+      out: { type: 'string', required: true },
+      'target-version': { type: 'integer', default: 2 }
+    },
+    shortAliases: {}
+  };
+  let parsed;
+  try { parsed = args.parse(argv.slice(1), schema); }
+  catch (err) { handleErr(err); return; }
+  const targetVersion = parsed.options['target-version'];
+  if (targetVersion !== 1 && targetVersion !== 2) {
+    writeError(CODES.E_INVALID_YAML, 'contract-migrate target-version must be 1 or 2', { reason: 'unsupported_version', received: targetVersion });
+    process.exit(1);
+    return;
+  }
+  try {
+    const raw = io.readFileUtf8(parsed.options.in);
+    const parsedContract = contractLib.parse(raw);
+    contractLib.validate(parsedContract);
+    const frontmatter = parsedContract.frontmatter || parsedContract;
+    const fromVersion = frontmatter.anvil_contract_version;
+    let output = raw;
+    if (fromVersion !== targetVersion) {
+      output = raw.replace(/anvil_contract_version:\s*\d+/, 'anvil_contract_version: ' + targetVersion);
+    }
+    io.writeFileUtf8(parsed.options.out, output);
+    process.stdout.write(JSON.stringify({ ok: true, migrated: 'contract v' + fromVersion + '->v' + targetVersion, written: parsed.options.out }) + '\n');
+    process.exit(0);
+  } catch (err) { handleErr(err); }
 }
 
 function planMigrateHandler(argv) {

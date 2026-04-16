@@ -158,3 +158,121 @@ test('append throws is preserved in read-only ledger module (stage 1)', () => {
   try { ledger.append({}); assert.fail('should throw'); }
   catch (err) { assert.strictEqual(err.code, 'E_NOT_IMPLEMENTED'); }
 });
+
+test('retroactive writes a lesson with structural tags', () => {
+  const s = seedDir();
+  try {
+    const contractObj = {
+      criteria: [
+        { id: 'C1', statement: 'Tailwind config enumerates full shadcn color palette.' },
+        { id: 'C2', statement: 'Build passes without missing-class errors.' }
+      ]
+    };
+    const r = ledgerWrite.retroactive({
+      contract: contractObj,
+      confirmed_gap_note: 'Astro+Tailwind+shadcn contracts must enumerate the full shadcn palette tokens',
+      criterion_id: 'C1',
+      source_intent: 'fix the tailwind shadcn palette in astro build',
+      patterns: ['astro', 'tailwind', 'shadcn', 'colors']
+    }, { ledgerPath: s.ledgerPath, indexPath: s.indexPath });
+    assert.strictEqual(r.appended, true);
+    const entry = JSON.parse(fs.readFileSync(s.ledgerPath, 'utf8').trim().split('\n')[0]);
+    assert.ok(entry.tags.includes('shipped_gap'));
+    assert.ok(entry.tags.includes('post_hoc'));
+    assert.strictEqual(entry.source_criterion_id, 'C1');
+    assert.ok(entry.remediation.includes('shadcn color palette'));
+  } finally { rmDir(s.dir); }
+});
+
+test('retroactive refuses unknown criterion_id', () => {
+  const s = seedDir();
+  try {
+    const contractObj = { criteria: [{ id: 'C1', statement: 'x' }] };
+    ledgerWrite.retroactive({
+      contract: contractObj,
+      confirmed_gap_note: 'gap',
+      criterion_id: 'C99',
+      source_intent: 'intent',
+      patterns: ['foo']
+    }, { ledgerPath: s.ledgerPath, indexPath: s.indexPath });
+    assert.fail('should throw');
+  } catch (err) {
+    assert.strictEqual(err.code, 'E_INVALID_LESSON');
+    assert.strictEqual(err.details.rule, 'unknown_criterion_id');
+  } finally { rmDir(s.dir); }
+});
+
+test('retroactive refuses empty gap-note (null-lesson guard)', () => {
+  const s = seedDir();
+  try {
+    const contractObj = { criteria: [{ id: 'C1', statement: 'x' }] };
+    ledgerWrite.retroactive({
+      contract: contractObj,
+      confirmed_gap_note: '   ',
+      criterion_id: 'C1',
+      source_intent: 'intent',
+      patterns: ['foo']
+    }, { ledgerPath: s.ledgerPath, indexPath: s.indexPath });
+    assert.fail('should throw');
+  } catch (err) {
+    assert.strictEqual(err.code, 'E_NULL_LESSON');
+  } finally { rmDir(s.dir); }
+});
+
+test('retroactive supersedes a near-duplicate (Jaccard >= 0.7)', () => {
+  const s = seedDir();
+  try {
+    fs.writeFileSync(s.ledgerPath, JSON.stringify({
+      anvil_ledger_entry_version: 1, id: 'L-old', created: '2026-01-01',
+      contract_gap: 'Astro Tailwind contracts must enumerate shadcn palette tokens',
+      evidence: 'prior',
+      remediation: 'prior remediation',
+      pattern: ['astro', 'tailwind']
+    }) + '\n');
+    const contractObj = { criteria: [{ id: 'C1', statement: 'enumerate palette' }] };
+    const r = ledgerWrite.retroactive({
+      contract: contractObj,
+      confirmed_gap_note: 'Astro Tailwind contracts must enumerate the shadcn palette tokens fully',
+      criterion_id: 'C1',
+      source_intent: 'fix tailwind',
+      patterns: ['astro', 'tailwind', 'shadcn']
+    }, { ledgerPath: s.ledgerPath, indexPath: s.indexPath });
+    const newEntry = fs.readFileSync(s.ledgerPath, 'utf8').trim().split('\n').map(JSON.parse).find(e => e.id === r.id);
+    assert.ok(Array.isArray(newEntry.supersedes));
+    assert.ok(newEntry.supersedes.includes('L-old'));
+  } finally { rmDir(s.dir); }
+});
+
+test('invalidate writes a marker; query hides invalidated lesson', () => {
+  const s = seedDir();
+  try {
+    const lessonId = 'L-inv-test';
+    fs.writeFileSync(s.ledgerPath, JSON.stringify({
+      anvil_ledger_entry_version: 1, id: lessonId, created: '2026-01-01',
+      contract_gap: 'some gap', evidence: 'e', remediation: 'r',
+      pattern: ['foo', 'bar']
+    }) + '\n');
+    ledgerWrite.invalidate(lessonId, 'revert', { ledgerPath: s.ledgerPath, indexPath: s.indexPath });
+    const hits = ledger.query('foo', { ledgerPath: s.ledgerPath, indexPath: s.indexPath });
+    assert.strictEqual(hits.length, 0, 'invalidated lesson must not appear in query');
+  } finally { rmDir(s.dir); }
+});
+
+test('invalidate refuses unknown reason', () => {
+  const s = seedDir();
+  try {
+    fs.writeFileSync(s.ledgerPath, JSON.stringify({
+      anvil_ledger_entry_version: 1, id: 'L-x', created: '2026-01-01',
+      contract_gap: 'g', evidence: 'e', remediation: 'r'
+    }) + '\n');
+    ledgerWrite.invalidate('L-x', 'bogus-reason', { ledgerPath: s.ledgerPath, indexPath: s.indexPath });
+    assert.fail('should throw');
+  } catch (err) {
+    assert.strictEqual(err.code, 'E_INVALID_LESSON');
+  } finally { rmDir(s.dir); }
+});
+
+test('jaccardSimilarity + normalizePatterns helpers', () => {
+  assert.ok(ledgerWrite.jaccardSimilarity('astro tailwind shadcn', 'astro tailwind shadcn colors') >= 0.7);
+  assert.deepStrictEqual(ledgerWrite.normalizePatterns(['Astro-Tailwind', 'shadcn']).sort(), ['astro', 'shadcn', 'tailwind']);
+});

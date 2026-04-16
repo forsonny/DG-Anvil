@@ -6,6 +6,52 @@ All notable changes to DG-Anvil are documented here. The format follows [Keep a 
 
 Nothing yet.
 
+## [0.6.0] - 2026-04-16
+
+Retroactive-lesson capture at `/ship` - close the cross-project learning gap without adding a third human touchpoint.
+
+### The problem being solved
+
+Prior releases captured Ledger lessons only when Verify or the Court failed DURING a run. A post-ship bug fix that sailed through on the first try taught the Ledger nothing. Two months later, a different project hit the same mistake. The revised design (vetted through 100-question deep discovery) closes this loop without breaking any of the 18 cross-stage invariants.
+
+### Added
+
+- **`cli/lib/ledger-write.js retroactive(input)`**. New entry point that writes a lesson with structural non-null guarantees: `confirmed_gap_note` must be non-empty, `criterion_id` MUST exist in `contract.criteria` (otherwise `E_INVALID_LESSON, rule: unknown_criterion_id`), `source_intent` must be non-empty. The lesson's `remediation` is the matched criterion's `statement` (a structural reference, not user prose); `evidence` names the passing-criterion bar.
+- **Jaccard-similarity supersession.** Before appending a retroactive lesson, `findSimilar` runs Jaccard on `contract_gap` tokens against every existing lesson. At similarity >= 0.7, the new lesson writes `supersedes: [<oldId>]` instead of a near-duplicate. Prevents Ledger flood.
+- **Structural tags.** Retroactive lessons carry `tags: [shipped_gap, post_hoc, ...pattern-tokens]` so future `anvil ledger query` calls can segregate reactive vs. retroactive lessons if needed.
+- **`anvil ledger retroactive --contract <file> --criterion <id> --gap-note <text>`**. CLI surface for the orchestrator to call during `/ship`.
+- **`anvil ledger invalidate --lesson <id> --reason <revert|stale|wrong>`**. Writes an invalidation marker (not a delete) so reverted shipped work does not keep teaching future contracts. `ledger.query` now filters out invalidated lessons. Audit trail preserved.
+- **Contract schema v2**. `anvil_contract_version` accepts `1` or `2`. New optional fields `shipped_gap_note` and `shipped_gap_note_draft` at the top level; `additionalProperties: false` still enforced.
+- **`anvil contract-migrate --target-version 2`**. Default target is now v2; `--target-version 1` preserves identity round-trip.
+
+### Changed
+
+- **`agents/contract-drafter.md`**. The drafter now scans `source_intent` for file paths that exist at repo HEAD. If any match, it populates the optional `shipped_gap_note_draft` field on the contract (<=240 chars, one sentence). This is agent-authored text the user reviews at `/ship`; it is NOT a contract-time question. Greenfield work leaves the field unset and the mechanism never fires.
+- **`skills/resetting/SKILL.md`**. Process now has two entry points: reactive (Verify/Court failure) and retroactive (post-ship bug-fix gate). Both route through `cli/lib/ledger-write.js`, preserving Invariant 17 (single-writer) and keeping `resetting` as the sole lesson composer.
+- **`commands/ship.md`**. New Step 3.5: if `contract.shipped_gap_note_draft` is present, present a binary-ish gate (`confirm C<N>` / `edit C<N>: <text>` / `skip`) as a sub-question of the existing PR-review touchpoint. This is NOT a third human touchpoint; it piggybacks on touchpoint two.
+- **`cli/lib/ledger.js query`** now filters invalidated lessons (both the marker entries and the lessons they invalidate).
+- **`docs/contract-examples/bad/wrong-version-002.yml`** now uses `anvil_contract_version: 99` (was `2`, which is valid under the v2 schema).
+
+### Invariants respected (audited via 100-question deep discovery)
+
+| Invariant | How it survives |
+|---|---|
+| Two human touchpoints, total | Step 3.5 piggybacks on the existing /ship touchpoint. No new interruption. |
+| 15 (Null-lesson prohibition) | `retroactive` refuses empty gap-notes AND missing criterion ids. Lesson remediation is a structural criterion reference, not user prose. |
+| 16 (No auto-pick gates) | Ship gate is binary-ish (confirm/edit/skip). `skip` writes nothing. |
+| 17 (Single-writer discipline) | All retroactive writes route through `ledger-write.append` via `ledger-write.retroactive`. `resetting` remains the sole composer. |
+| 7 (Schema changes require a migration) | `anvil_contract_version` bumped to 2; `anvil contract-migrate` now defaults to v2; round-trip test added. |
+
+### Known limitation
+
+Cross-framework pattern match (e.g. `astro+tailwind+shadcn` -> `vite+react+shadcn`) still fails on token-overlap alone. Semantic similarity retrieval (embedding-based) is a post-1.0 conversation, not v0.6.0. The revised proposal is honest about this: for same-framework cross-project learning, the mechanism works; for cross-framework, lesson injection requires at least one overlapping lexical token.
+
+### Tests
+
+- 8 contract unit tests pass (added v1-to-v2 migration round-trip, v2 validator acceptance, unknown-top-level-key rejection).
+- 18 ledger unit tests pass (added retroactive happy-path, missing-criterion refusal, empty-gap refusal, Jaccard supersession, invalidate hides from query, unknown-reason rejection, Jaccard + normalizePatterns helpers).
+- Stage 4 exit criteria still pass unchanged.
+
 ## [0.5.0] - 2026-04-16
 
 Worktree lifecycle + orchestrator-edit blocker. Fixes the three-bug cascade observed during real-world testing: stale worktrees failing retry, orchestrator improvising `git merge`/`git stash` manually, and orchestrator writing production files directly outside any worktree.
@@ -156,7 +202,8 @@ Initial release. Implements the complete Anvil loop end to end across five build
 - **Null-lesson prohibition.** Lessons with empty `contract_gap`, `evidence`, or `remediation` are rejected at the write path.
 - **Zero runtime dependencies.** `package.json` declares no `dependencies` or `devDependencies`.
 
-[Unreleased]: https://github.com/forsonny/DG-Anvil/compare/v0.5.0...HEAD
+[Unreleased]: https://github.com/forsonny/DG-Anvil/compare/v0.6.0...HEAD
+[0.6.0]: https://github.com/forsonny/DG-Anvil/compare/v0.5.0...v0.6.0
 [0.5.0]: https://github.com/forsonny/DG-Anvil/compare/v0.4.0...v0.5.0
 [0.4.0]: https://github.com/forsonny/DG-Anvil/compare/v0.3.0...v0.4.0
 [0.3.0]: https://github.com/forsonny/DG-Anvil/compare/v0.2.1...v0.3.0

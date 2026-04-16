@@ -6,10 +6,12 @@
   "required": ["anvil_contract_version", "goal", "created", "source_intent", "criteria"],
   "additionalProperties": false,
   "properties": {
-    "anvil_contract_version": { "type": "integer", "const": 1 },
+    "anvil_contract_version": { "type": "integer", "enum": [1, 2] },
     "goal": { "type": "string", "minLength": 1 },
     "created": { "type": "string", "minLength": 1 },
     "source_intent": { "type": "string", "minLength": 1 },
+    "shipped_gap_note": { "type": "string", "minLength": 1, "maxLength": 500 },
+    "shipped_gap_note_draft": { "type": "string", "minLength": 1, "maxLength": 240 },
     "ledger_queried": { "type": "boolean" },
     "ledger_hits": {
       "type": "array",

@@ -1,6 +1,6 @@
 {
   "name": "dg-anvil",
-  "version": "0.5.0",
+  "version": "0.6.0",
   "description": "Enforces the Anvil loop (Contract, Plan, Execute, Verify, Judge, Reset) as structural gates. Specifications are machine-readable before code runs; verification is external; failures persist as Ledger lessons that future contracts inherit.",
   "author": {
     "name": "forsonny",

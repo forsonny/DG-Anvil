@@ -1,6 +1,6 @@
 # rejection_rule: wrong_version; expected_code: E_INVALID_CONTRACT
 ---
-anvil_contract_version: 2
+anvil_contract_version: 99
 goal: "Do."
 created: "2026-04-15"
 source_intent: "User said."

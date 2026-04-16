@@ -62,12 +62,50 @@ test('anvil contract --validate bad fixture exits non-zero', () => {
   assert.strictEqual(err.details.rule, 'missing_version');
 });
 
-test('contract-migrate v1->v1 round trip', () => {
+test('contract-migrate v1->v2 round trip (default target)', () => {
   const src = path.join(GOOD_DIR, 'rate-limit-001.yml');
   const tmp = path.join(os.tmpdir(), 'anvil-rt-contract-' + Date.now() + '.yml');
   const r = spawnSync(process.execPath, [ANVIL, 'contract-migrate', '--in', src, '--out', tmp], { encoding: 'utf8' });
   assert.strictEqual(r.status, 0, r.stderr);
   const p = contract.loadAndValidate(tmp);
+  assert.strictEqual(p.frontmatter.anvil_contract_version, 2, 'default migrate target is v2');
+  fs.unlinkSync(tmp);
+});
+
+test('contract-migrate v1->v1 identity with --target-version 1', () => {
+  const src = path.join(GOOD_DIR, 'rate-limit-001.yml');
+  const tmp = path.join(os.tmpdir(), 'anvil-rt-contract-v1-' + Date.now() + '.yml');
+  const r = spawnSync(process.execPath, [ANVIL, 'contract-migrate', '--in', src, '--out', tmp, '--target-version', '1'], { encoding: 'utf8' });
+  assert.strictEqual(r.status, 0, r.stderr);
+  const p = contract.loadAndValidate(tmp);
   assert.strictEqual(p.frontmatter.anvil_contract_version, 1);
   fs.unlinkSync(tmp);
+});
+
+test('contract validates both v1 and v2', () => {
+  const v1Src = path.join(GOOD_DIR, 'rate-limit-001.yml');
+  const v1Text = fs.readFileSync(v1Src, 'utf8');
+  const v2Text = v1Text.replace(/anvil_contract_version:\s*1/, 'anvil_contract_version: 2');
+  const v2Tmp = path.join(os.tmpdir(), 'anvil-v2-' + Date.now() + '.yml');
+  fs.writeFileSync(v2Tmp, v2Text);
+  const p = contract.loadAndValidate(v2Tmp);
+  assert.strictEqual(p.frontmatter.anvil_contract_version, 2);
+  fs.unlinkSync(v2Tmp);
+});
+
+test('contract rejects unknown top-level key even with shipped_gap_note_draft added', () => {
+  const v1Src = path.join(GOOD_DIR, 'rate-limit-001.yml');
+  const v1Text = fs.readFileSync(v1Src, 'utf8');
+  const tampered = v1Text.replace('goal:', 'unauthorized_key: "nope"\ngoal:');
+  const tmp = path.join(os.tmpdir(), 'anvil-unauth-' + Date.now() + '.yml');
+  fs.writeFileSync(tmp, tampered);
+  try {
+    contract.loadAndValidate(tmp);
+    assert.fail('should reject unknown_top_level_key');
+  } catch (err) {
+    assert.strictEqual(err.code, 'E_INVALID_CONTRACT');
+    assert.strictEqual(err.details.rule, 'unknown_top_level_key');
+  } finally {
+    fs.unlinkSync(tmp);
+  }
 });

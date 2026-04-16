@@ -34,9 +34,25 @@ Before returning:
 1. Run `node "$CLAUDE_PLUGIN_ROOT/cli/anvil.js" contract --validate anvil/contract.yml`. Exit 0 is required.
 2. If validation fails, read the structured error on stderr, fix the draft, and re-run. Do not return a contract that does not validate.
 
+### Post-ship bug-fix detection
+
+Before returning, scan `source_intent` for file-path-like tokens (strings matching `[a-zA-Z0-9_./-]+\.(js|ts|tsx|jsx|py|go|rb|rs|java|c|cpp|h|mjs|cjs|yml|yaml|json|toml|md|css|html)`). For each, check if the file exists at the repository HEAD (run `git -C <repoRoot> cat-file -e HEAD:<path>` via Bash; exit 0 means the file exists; non-zero means it does not). If ANY referenced file exists at HEAD, the intent is a post-ship bug-fix or modification of an existing artifact. In that case, populate an optional `shipped_gap_note_draft` field at the top level of the contract. The draft is ONE sentence (at most 240 characters) of the shape:
+
+> `<framework>+<component-lib> contracts like this must <concrete structural requirement> so that <specific failure mode> is caught before ship.`
+
+Example: `Astro+Tailwind+shadcn contracts must enumerate the full shadcn semantic color palette in tailwind.config.mjs so that "The border class does not exist" build failures are caught before ship.`
+
+This draft is what the orchestrator presents to the user at /ship for binary confirm/edit/skip. Do NOT ask the user anything yourself; the draft is agent-authored text the user reviews later.
+
+If no file in `source_intent` exists at HEAD, OMIT the `shipped_gap_note_draft` field entirely. Do not guess.
+
+### Return
+
 Return to the orchestrator exactly one sentence of this shape:
 
 > `Contract drafted at anvil/contract.yml: N criteria covering <brief plain-English summary of the criteria taken together>.`
+
+If a `shipped_gap_note_draft` was populated, append to that sentence: ` Shipped-gap note proposed for /ship review.`
 
 Do not dump the YAML. Do not explain your reasoning. Do not preview the plan. Do not ask the user a question. The orchestrator reads the file itself after you return.
 

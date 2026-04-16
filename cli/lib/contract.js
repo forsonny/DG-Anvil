@@ -30,7 +30,7 @@ function validate(parsed) {
   if (!root || typeof root !== 'object') reject('missing_version', '$', 'object', typeof root);
 
   if (!('anvil_contract_version' in root)) reject('missing_version', '$.anvil_contract_version', 'integer', undefined);
-  if (root.anvil_contract_version !== 1) reject('wrong_version', '$.anvil_contract_version', 1, root.anvil_contract_version);
+  if (root.anvil_contract_version !== 1 && root.anvil_contract_version !== 2) reject('wrong_version', '$.anvil_contract_version', '1 or 2', root.anvil_contract_version);
 
   if (!('goal' in root) || typeof root.goal !== 'string' || root.goal.length === 0) {
     reject('missing_goal', '$.goal', 'non-empty string', root.goal);
@@ -48,7 +48,7 @@ function validate(parsed) {
     reject('missing_criteria', '$.criteria', 'non-empty array', root.criteria);
   }
 
-  const allowedTop = new Set(['anvil_contract_version', 'goal', 'created', 'source_intent', 'criteria', 'invariants', 'notes', 'counter_examples', 'ledger_queried', 'ledger_hits']);
+  const allowedTop = new Set(['anvil_contract_version', 'goal', 'created', 'source_intent', 'criteria', 'invariants', 'notes', 'counter_examples', 'ledger_queried', 'ledger_hits', 'shipped_gap_note', 'shipped_gap_note_draft']);
   for (const key of Object.keys(root)) {
     if (!allowedTop.has(key)) reject('unknown_top_level_key', '$.' + key, 'one of ' + Array.from(allowedTop).join('|'), key);
   }

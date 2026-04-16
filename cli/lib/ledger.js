@@ -39,17 +39,29 @@ function tokenize(s) {
   return String(s || '').toLowerCase().split(/[^a-z0-9]+/).filter(Boolean);
 }
 
+function invalidatedIds(lessons) {
+  const set = new Set();
+  for (const l of lessons) {
+    if (typeof l.invalidates === 'string') set.add(l.invalidates);
+  }
+  return set;
+}
+
 function query(pattern, opts) {
   const options = opts || {};
   const limit = options.limit || 5;
   const { lessons } = load(options);
+  const invalidated = invalidatedIds(lessons);
   const tokens = tokenize(pattern);
-  const scored = lessons.map(l => {
-    const lessonTokens = new Set(Array.isArray(l.pattern) ? l.pattern.flatMap(tokenize) : tokenize(l.pattern));
-    let score = 0;
-    for (const t of tokens) if (lessonTokens.has(t)) score++;
-    return { lesson: l, score, created: l.created || '' };
-  });
+  const scored = lessons
+    .filter(l => !invalidated.has(l.id))
+    .filter(l => !l.invalidates)
+    .map(l => {
+      const lessonTokens = new Set(Array.isArray(l.pattern) ? l.pattern.flatMap(tokenize) : tokenize(l.pattern));
+      let score = 0;
+      for (const t of tokens) if (lessonTokens.has(t)) score++;
+      return { lesson: l, score, created: l.created || '' };
+    });
   scored.sort((a, b) => {
     if (b.score !== a.score) return b.score - a.score;
     return b.created.localeCompare(a.created);
