@@ -10,6 +10,10 @@ anvil/verify/
 # Worktrees the executor creates per task
 .anvil-worktrees/
 
+# MAKER checkpoint scratch (created by the maker-framework plugin if installed
+# in the consuming repo; never part of DG-Anvil's source)
+.maker-checkpoints/
+
 # Node
 node_modules/
 npm-debug.log
