@@ -6,7 +6,7 @@
 
 A plugin that turns "the agent thinks it's done" into "the agent has proven it's done."
 
-[![Version](https://img.shields.io/badge/version-0.1.0-blue.svg)](https://github.com/forsonny/DG-Anvil/releases)
+[![Version](https://img.shields.io/badge/version-0.2.0-blue.svg)](https://github.com/forsonny/DG-Anvil/releases)
 [![License: MIT](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
 [![Node](https://img.shields.io/badge/node-%3E%3D20.0.0-brightgreen.svg)](https://nodejs.org)
 [![Claude Code](https://img.shields.io/badge/Claude%20Code-plugin-orange.svg)](https://code.claude.com)

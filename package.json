@@ -1,6 +1,6 @@
 {
   "name": "dg-anvil",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "DG-Anvil plugin; canonical design under reports/Anvil-Design/.",
   "engines": {
     "node": ">=20.0.0"
